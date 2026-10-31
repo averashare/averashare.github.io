@@ -1,5 +1,5 @@
 // সার্ভিস ওয়ার্কার: শুধু সাইটের নিজের ফাইল (পোর্টালের কাঠামো) রাখে। ডাটাবেসের কোনো তথ্য কখনো জমা রাখে না।
-const C='avera-v270';
+const C='avera-v290';
 const SHELL=['./','index.html','app.js','logo.jpg','header.png','manifest.webmanifest','icon-192.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});
