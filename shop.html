@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Avera Mart — অনলাইন দোকান</title>
+<meta name="description" content="প্রকৃতির ছোঁয়া, নিরাপদ আস্থা। অর্গানিক ও নিত্যপ্রয়োজনীয় পণ্য — ক্যাশ অন ডেলিভারিতে ঘরে বসে অর্ডার করুন।">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#123C69">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="shop.css?v=1.3">
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="brand"><img src="logo.jpg" alt="লোগো"><div><b id="shopName">Avera Mart</b><small id="tagline"></small></div></div>
+    <button class="cartbtn" id="topCart" type="button">কার্ট <i id="topCount">0</i></button>
+  </div>
+
+  <div class="notice" id="closed" hidden></div>
+
+  <section class="hero">
+    <h1 id="heroTitle"></h1>
+    <p id="heroText"></p>
+  </section>
+
+  <div class="strip" id="strip"></div>
+
+  <section id="products">
+    <div class="tools">
+      <div class="row">
+        <input type="search" id="q" placeholder="🔍 পণ্য খুঁজুন" aria-label="পণ্য খুঁজুন">
+        <select id="sort" aria-label="সাজান">
+          <option value="def">সাজানো: ডিফল্ট</option>
+          <option value="low">দাম: কম থেকে বেশি</option>
+          <option value="high">দাম: বেশি থেকে কম</option>
+          <option value="name">নাম অনুযায়ী</option>
+        </select>
+      </div>
+      <div class="cats" id="cats"></div>
+    </div>
+    <div class="sec-h"><h2>আমাদের পণ্য</h2><span id="pcount"></span></div>
+    <div class="grid" id="grid"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
+  </section>
+
+  <section class="howwrap">
+    <h2 id="howTitle">কীভাবে অর্ডার করবেন</h2>
+    <ol class="how" id="how" aria-labelledby="howTitle"></ol>
+  </section>
+
+  <footer>
+    <div>
+      <div class="id"><img src="logo.jpg" alt=""><div><h3 id="fName"></h3><span style="color:var(--muted)" id="fAddr"></span></div></div>
+      <p class="fine">অর্ডার বা পণ্য সম্পর্কে জানতে ফোন করুন বা মেসেজ দিন।</p>
+      <p class="fine"><a href="index.html">স্টাফ লগইন</a></p>
+    </div>
+    <div>
+      <h3>যোগাযোগ</h3>
+      <div id="phones"></div>
+      <div class="clinks" id="links"></div>
+    </div>
+  </footer>
+</div>
+
+<a class="wafab" id="wafab" href="#" target="_blank" rel="noopener" hidden>WhatsApp</a>
+<div class="bar" id="bar" hidden><button class="btn" id="barBtn" type="button"><span id="barText"></span><span>কার্ট দেখুন ›</span></button></div>
+
+<div class="veil" id="veil" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="cartTitle">
+    <header><h2 id="cartTitle">আপনার কার্ট</h2><button class="x" id="close" type="button" aria-label="বন্ধ করুন">✕</button></header>
+    <div id="lines"></div>
+    <form id="checkout" novalidate>
+      <div class="areas" id="areas"></div>
+      <div class="sum" id="sum"></div>
+      <div class="f">
+        <label class="field" for="nm">আপনার নাম<input id="nm" autocomplete="name" maxlength="80"></label>
+        <label class="field" for="ph">মোবাইল নম্বর<input id="ph" inputmode="tel" autocomplete="tel" placeholder="01XXXXXXXXX"></label>
+        <label class="field" for="ad">পূর্ণ ঠিকানা (জেলা ও থানাসহ)<textarea id="ad" rows="2" autocomplete="street-address" maxlength="300"></textarea></label>
+        <label class="field" for="nt">অতিরিক্ত কিছু জানাতে চাইলে<input id="nt" maxlength="300"></label>
+        <div class="hp" aria-hidden="true"><label>Website<input id="web" tabindex="-1" autocomplete="off"></label></div>
+      </div>
+      <div class="err" id="err" role="alert"></div>
+      <div class="send"><button class="btn" id="place" type="submit">অর্ডার নিশ্চিত করুন (ক্যাশ অন ডেলিভারি)</button></div>
+      <p class="note" id="codNote"></p>
+    </form>
+    <div id="done" class="done" hidden></div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="shop.js?v=1.3"></script>
+</body>
+</html>

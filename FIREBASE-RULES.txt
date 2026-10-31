@@ -1,0 +1,140 @@
+রোলভিত্তিক সুরক্ষা (সংস্করণ ৫.৫) — Firebase সেটআপ ও Rules
+=====================================================================
+এখন লগইন Firebase-এর আসল অ্যাকাউন্টে (ইমেইল + পাসওয়ার্ড), আর অ্যাডমিন/ম্যানেজারের পার্থক্য সার্ভারই যাচাই করে।
+কোনো ডেটা সরাতে বা বদলাতে হবে না — ডেটা যেখানে ছিল সেখানেই থাকে। ধাপগুলো ঠিক এই ক্রমে করুন (রাতে/দোকান বন্ধ থাকলে ভালো)।
+
+ধাপ ১ — Email/Password চালু করুন
+  Firebase Console → Authentication → Sign-in method → "Email/Password" → Enable → Save.
+
+ধাপ ২ — সাময়িক নিয়ম বসান (এতে পুরোনো অ্যাপ বন্ধ হয় না)
+  Firestore Database → Rules ট্যাব → নিচের "সাময়িক নিয়ম" বসান → নিচের লেখা CHANGE-THIS-CODE বদলে নিজের একটি গোপন কোড দিন
+  (ইংরেজি অক্ষর+সংখ্যা, ৮+ ঘর, যেমন: Nayem7842Kx) → Publish।  কোডটি মনে/লিখে রাখুন।
+
+ধাপ ৩ — নতুন অ্যাপ (ZIP-এর সব ফাইল) ডিপ্লয় করুন, তারপর:
+  ক) লগইন পেইজে "প্রথমবার সেটআপ (শুধু মালিক)" চাপুন → সেটআপ কোড + আপনার আসল ইমেইল + পাসওয়ার্ড দিয়ে অ্যাডমিন তৈরি করুন।
+  খ) সেটিংস → "ব্যবহারকারী ও পাসওয়ার্ড" থেকে ম্যানেজারের অ্যাকাউন্ট দিন।
+  গ) আলাদা ব্রাউজারে ম্যানেজার হিসেবে লগইন করে অর্ডার/ক্রয়/খরচ/রিটার্ন ঠিকমতো চলছে কিনা দেখুন।
+
+ধাপ ৪ — সব ঠিক থাকলে "চূড়ান্ত নিয়ম" বসান (এটাই আসল সুরক্ষা)
+  Rules ট্যাবে চূড়ান্ত নিয়ম বসিয়ে (CHANGE-THIS-CODE একই কোডে বদলে) Publish করুন।
+  এরপর: Authentication → Sign-in method → "Anonymous" বন্ধ (Disable) করে দিন।
+  চাইলে Firestore → averamart → users ডকুমেন্টটি Console থেকে মুছে দিতে পারেন (পুরোনো পিন/পাসওয়ার্ড-হ্যাশ ছিল; এখন আর লাগে না)।
+
+চূড়ান্ত নিয়মে যা নিশ্চিত হয়:
+  • সাইন-ইন করা ও রোল থাকা (অ্যাডমিন/ম্যানেজার) ছাড়া কেউ কোনো ডেটা পড়তে/লিখতে পারে না — লিংক জানলেও না।
+  • ম্যানেজার সেটিংস, মাস ক্লোজিং, বিনিয়োগ, শেয়ারহোল্ডার ও ব্যবহারকারী অ্যাকাউন্ট বদলাতে পারে না (শুধু পণ্য/অর্ডার/ক্রয়/খরচ/রিটার্ন/লিফলেট; সেটিংসে শুধু ক্যাটাগরির তালিকা)।
+  • ব্যাকআপের পুরো কপি শুধু অ্যাডমিন পড়তে পারে; কোনো ডকুমেন্ট মোছা যায় না; একবারে ২০টির বেশি এন্ট্রি কমানো যায় না।
+সীমাবদ্ধতা: পণ্যের ক্রয়মূল্য/লাভ ম্যানেজারের স্ক্রিনে লুকানো, কিন্তু ডেটাবেজে পণ্য-ডকুমেন্টের ভেতরেই থাকে — প্রযুক্তি-জানা ম্যানেজার ডেভেলপার টুলে দেখতে পারে। এটা আটকাতে ডেটা কাঠামো আলাদা করতে হবে (পরবর্তী আপগ্রেড)।
+খরচ: নিয়ম যাচাইয়ের জন্য প্রতি অনুরোধে ১টি করে অতিরিক্ত "রিড" গোনা হয় — ছোট দোকানে Firebase-এর ফ্রি সীমার মধ্যেই থাকার কথা।
+
+----------------------------------------------------------------------
+সাময়িক নিয়ম (ধাপ ২)
+----------------------------------------------------------------------
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null && request.auth.token.firebase.sign_in_provider == 'password'; }
+    function roleDocPath() { return /databases/$(database)/documents/averamart_roles/$(request.auth.uid); }
+    function hasRole() { return signedIn() && exists(roleDocPath()); }
+    function isAdmin() { return hasRole() && get(roleDocPath()).data.role == 'admin'; }
+    function setupCode() { return 'CHANGE-THIS-CODE'; }
+
+    match /averamart_roles/{uid} {
+      allow get: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow list: if isAdmin();
+      allow create: if (isAdmin() && request.resource.data.role in ['admin', 'manager'])
+        || (signedIn() && request.auth.uid == uid && request.resource.data.role == 'admin'
+            && request.resource.data.setupCode == setupCode()
+            && !exists(/databases/$(database)/documents/averamart_meta/setup));
+      allow update: if isAdmin() && request.resource.data.role in ['admin', 'manager'];
+      allow delete: if isAdmin() && uid != request.auth.uid;
+    }
+    match /averamart_meta/{d} {
+      allow read: if isAdmin();
+      allow create: if signedIn() && d == 'setup' && request.resource.data.setupCode == setupCode()
+        && !exists(/databases/$(database)/documents/averamart_meta/setup);
+      allow update, delete: if false;
+    }
+
+    // ---- আগের নিয়ম (এখনকার পুরোনো অ্যাপ চালু রাখতে) ----
+    match /averamart/{doc} {
+      allow read, create: if request.auth != null;
+      allow delete: if false;
+      allow update: if request.auth != null && (
+        !('items' in resource.data) || !('items' in request.resource.data) ||
+        request.resource.data.items.size() >= resource.data.items.size() - 20
+      );
+    }
+    match /averamart_backups/{doc} {
+      allow read, create: if request.auth != null;
+      allow update: if false;
+      allow delete: if request.auth != null && resource.data.keep != true && resource.data.ts < request.time - duration.value(60, 'd');
+    }
+  }
+}
+
+----------------------------------------------------------------------
+চূড়ান্ত নিয়ম (ধাপ ৪)
+----------------------------------------------------------------------
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null && request.auth.token.firebase.sign_in_provider == 'password'; }
+    function roleDocPath() { return /databases/$(database)/documents/averamart_roles/$(request.auth.uid); }
+    function hasRole() { return signedIn() && exists(roleDocPath()); }
+    function isAdmin() { return hasRole() && get(roleDocPath()).data.role == 'admin'; }
+    function isStaff() { return hasRole() && get(roleDocPath()).data.role in ['admin', 'manager']; }
+    function setupCode() { return 'CHANGE-THIS-CODE'; }
+    function adminOnlyDoc(doc) { return doc in ['settings', 'closings', 'investments', 'shareholders', 'contributions']; }
+    function notShrinking() {
+      return !('items' in resource.data) || !('items' in request.resource.data) ||
+        request.resource.data.items.size() >= resource.data.items.size() - 20;
+    }
+
+    match /averamart_roles/{uid} {
+      allow get: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow list: if isAdmin();
+      allow create: if (isAdmin() && request.resource.data.role in ['admin', 'manager'])
+        || (signedIn() && request.auth.uid == uid && request.resource.data.role == 'admin'
+            && request.resource.data.setupCode == setupCode()
+            && !exists(/databases/$(database)/documents/averamart_meta/setup));
+      allow update: if isAdmin() && request.resource.data.role in ['admin', 'manager'];
+      allow delete: if isAdmin() && uid != request.auth.uid;
+    }
+    match /averamart_meta/{d} {
+      allow read: if isAdmin();
+      allow create: if signedIn() && d == 'setup' && request.resource.data.setupCode == setupCode()
+        && !exists(/databases/$(database)/documents/averamart_meta/setup);
+      allow update, delete: if false;
+    }
+
+    // মূল ডেটা: লগইন করা স্টাফ পড়বে; অ্যাডমিন-সংক্রান্ত ডকুমেন্ট শুধু অ্যাডমিন বদলাবে; কখনো মোছা যাবে না
+    match /averamart/{doc} {
+      allow read: if isStaff() && doc != 'users';
+      allow create: if isStaff() && doc != 'users' && (isAdmin() || !adminOnlyDoc(doc));
+      allow delete: if false;
+      allow update: if isStaff() && doc != 'users' && notShrinking() && (
+        isAdmin() || !adminOnlyDoc(doc) ||
+        (doc == 'settings' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['productCategories', 'expenseCategories']))
+      );
+    }
+
+    // সার্ভার ব্যাকআপ: পুরো কপি শুধু অ্যাডমিন পড়ে; "meta" লাইন স্টাফ পড়তে পারে (দৈনিক ব্যাকআপ চালাতে); লেখা একবারই
+    match /averamart_backups/{doc} {
+      allow read: if isAdmin() || (isStaff() && resource.data.kind == 'meta');
+      allow create: if isStaff();
+      allow update: if false;
+      allow delete: if isAdmin() && resource.data.keep != true && resource.data.ts < request.time - duration.value(60, 'd');
+    }
+  }
+}
+
+----------------------------------------------------------------------
+ফেরত যাওয়ার নিয়ম (কোনো সমস্যা হলে)
+----------------------------------------------------------------------
+যদি ঢুকতে না পারেন: Firebase Console → Rules-এ উপরের "সাময়িক নিয়ম" আবার বসান। ডেটা অক্ষত আছে — নিয়ম শুধু ঢোকার অনুমতি ঠিক করে।
+অ্যাডমিন ইমেইল-পাসওয়ার্ড ভুললে: লগইন পেইজের "পাসওয়ার্ড ভুলে গেছেন?" থেকে ইমেইলে লিংক নিন।
+সম্পূর্ণ আগের ব্যবস্থায় ফিরতে: secure.js-এর শুরুতে SECURE_MODE = false করুন, Anonymous সাইন-ইন আবার Enable করুন,
+এবং Rules-এ আগের এই নিয়ম বসান: match /averamart/{doc} { allow read, create: if request.auth != null; allow delete: if false; allow update: if request.auth != null; }
